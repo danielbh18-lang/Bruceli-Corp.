@@ -1,0 +1,1 @@
+são alguns programas que estou produzindo para me ajudar a organizar e executar algumas tarefas que fazem parte da rotina de um técnico em segurança do trabalho mas que também é um amante do desenvolvimento de sistemas.
