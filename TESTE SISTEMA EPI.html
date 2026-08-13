@@ -1,0 +1,956 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sistema de Gestão de EPI - Master</title>
+<style>
+  :root {
+    --primary: #1e3a5f;
+    --secondary: #2c5a8f;
+    --accent: #3a6ea5;
+    --danger: #c0392b;
+    --success: #27ae60;
+    --bg: #f4f6f9;
+    --text: #333;
+    --white: #ffffff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; min-height: 100vh; display: flex; flex-direction: column; }
+  
+  header { background: var(--primary); color: var(--white); padding: 20px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+  nav { background: #16304a; display: flex; flex-wrap: wrap; justify-content: center; gap: 5px; padding: 10px; position: sticky; top: 0; z-index: 100; }
+  nav button { background: var(--secondary); color: var(--white); border: none; padding: 10px 18px; border-radius: 5px; cursor: pointer; margin: 3px; font-size: 14px; transition: 0.3s; }
+  nav button:hover { background: var(--accent); }
+
+  main { max-width: 1200px; margin: 20px auto; padding: 0 20px; flex: 1; width: 100%; }
+  .aba { background: var(--white); padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 20px; display: none; }
+  .aba.active { display: block; }
+
+  h2 { color: var(--primary); margin-bottom: 20px; border-bottom: 3px solid #e5e9f0; padding-bottom: 10px; }
+  h3 { color: var(--secondary); margin: 20px 0 10px; }
+
+  .form-group { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; background: #f9f9f9; padding: 15px; border-radius: 8px; border: 1px solid #eee; }
+  label { font-weight: bold; display: block; margin-bottom: 5px; font-size: 14px; }
+  select, input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
+
+  .btn-area { margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap; }
+  button { background: var(--secondary); color: var(--white); border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; transition: 0.2s; display: inline-flex; align-items: center; gap: 8px; }
+  button:hover { background: var(--accent); }
+  button.danger { background: var(--danger); }
+  button.danger:hover { background: #a93226; }
+  button.success { background: var(--success); }
+  button.secundario { background: #6c757d; }
+  button.edit { background: #f39c12; padding: 5px 10px; }
+  button.delete { background: var(--danger); padding: 5px 10px; }
+  button.pequeno { padding: 4px 8px; font-size: 12px; }
+
+  .lista { margin-top: 15px; border: 1px solid #dee2e6; border-radius: 8px; background: #fff; overflow: hidden; }
+  .lista-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border-bottom: 1px solid #eee; transition: 0.2s; gap: 10px; }
+  .lista-item:hover { background: #fcfcfc; }
+  .lista-item:last-child { border-bottom: none; }
+
+  .epis-check { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px; margin: 20px 0; }
+  .epis-check label { display: flex; align-items: center; font-weight: normal; background: #f8f9fa; padding: 10px; border-radius: 6px; border: 1px solid #ddd; cursor: pointer; }
+  .epis-check input { width: auto; margin-right: 10px; }
+
+  .grupo-data { background: #fff; padding: 15px; border-radius: 10px; margin-bottom: 15px; border-left: 6px solid var(--secondary); box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
+  .grupo-data strong { font-size: 16px; color: var(--primary); display: block; margin-bottom: 10px; }
+  .grupo-data ul { list-style: none; }
+  .grupo-data li { margin-top: 8px; padding: 8px; background: #f8f9fa; border-radius: 5px; font-size: 14px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #eee; flex-wrap: wrap; gap: 8px; }
+  
+  .data-info { display: flex; gap: 15px; font-size: 13px; flex-wrap: wrap; }
+  .data-entrega { color: var(--success); font-weight: bold; }
+  .data-troca { color: var(--danger); font-weight: bold; }
+  .badge-un { font-size: 11px; background: #eee; padding: 2px 6px; border-radius: 4px; color: #666; margin-left: 5px; }
+  .ca-info { font-size: 12px; color: #666; font-style: italic; margin-left: 5px; }
+
+  .mensagem { padding: 15px; border-radius: 6px; margin: 10px 0; display: none; text-align: center; font-weight: bold; }
+  .sucesso { background: #d4edda; color: #155724; }
+  .erro { background: #f8d7da; color: #721c24; }
+
+  footer { text-align: center; padding: 25px 0 30px; color: #888; font-size: 12px; letter-spacing: 0.3px; }
+  footer span { opacity: 0.85; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Controle de Troca de EPI</h1>
+  <p>Gestão Profissional de Periodicidade e Cronogramas</p>
+</header>
+
+<nav>
+  <button onclick="mostrarAba('cronograma')">📅 Cronograma</button>
+  <button onclick="mostrarAba('cargos')">👷 Cargos</button>
+  <button onclick="mostrarAba('epis')">🦺 EPIs</button>
+  <button onclick="mostrarAba('vinculos')">🔗 Vínculos</button>
+  <button onclick="mostrarAba('config')">⚙️ Arquivos e Configs</button>
+</nav>
+
+<main>
+  <!-- ABA CRONOGRAMA -->
+  <section id="cronograma" class="aba active">
+    <h2>Gerar Cronograma de Trocas</h2>
+    <div class="form-group">
+      <div>
+        <label>Cargo</label>
+        <select id="cargoCronograma" onchange="atualizarEPIsCronograma()"></select>
+      </div>
+      <div>
+        <label>Data de Admissão / Início</label>
+        <input type="date" id="dataInicio" value="2024-01-01">
+      </div>
+      <div>
+        <label>Data Final (Limite)</label>
+        <input type="date" id="dataFim">
+      </div>
+    </div>
+    <div id="episCronograma" class="epis-check"></div>
+    <div class="btn-area">
+      <button onclick="gerarCronograma()">🚀 Gerar Cronograma</button>
+      <button class="secundario" onclick="exportarCSV()" style="display:none" id="btnExportar">📥 Exportar CSV</button>
+    </div>
+    <div id="msgCronograma" class="mensagem"></div>
+    <div id="resultadoCronograma"></div>
+  </section>
+
+  <!-- ABA CARGOS -->
+  <section id="cargos" class="aba">
+    <h2>Gestão de Cargos</h2>
+    <div class="form-group">
+      <input type="hidden" id="editCargoId">
+      <div>
+        <label>Setor / GHE</label>
+        <input type="text" id="novoSetor" placeholder="Ex: Terraplanagem">
+      </div>
+      <div>
+        <label>Cargo</label>
+        <input type="text" id="novoCargo" placeholder="Ex: Operador de Escavadeira">
+      </div>
+    </div>
+    <div class="btn-area">
+      <button id="btnSalvarCargo" onclick="adicionarCargo()">➕ Cadastrar Cargo</button>
+      <button id="btnCancelarCargo" class="secundario" style="display:none" onclick="limparFormCargo()">Cancelar Edição</button>
+    </div>
+    <h3>Cargos Cadastrados</h3>
+    <div id="listaCargos" class="lista"></div>
+  </section>
+
+  <!-- ABA EPIs -->
+  <section id="epis" class="aba">
+    <h2>Gestão de EPIs</h2>
+    <div class="form-group">
+      <input type="hidden" id="editEpiId">
+      <div>
+        <label>Nome do EPI</label>
+        <input type="text" id="novoEpiNome" placeholder="Ex: Botina de Segurança">
+      </div>
+      <div>
+        <label>C.A. (Certificado de Aprovação)</label>
+        <input type="text" id="novoEpiCA" placeholder="Ex: 12345">
+      </div>
+      <div>
+        <label>Unidade</label>
+        <select id="novoEpiUnidade">
+          <option value="Unidade">Unidade</option>
+          <option value="Par">Par</option>
+          <option value="Kit">Kit</option>
+          <option value="Caixa">Caixa</option>
+        </select>
+      </div>
+      <div>
+        <label>Periodicidade</label>
+        <select id="novoEpiPeriodo" onchange="ajustarCampoIntervalo()">
+          <option value="meses">Meses</option>
+          <option value="dias">Dias</option>
+          <option value="diario">Diário</option>
+        </select>
+      </div>
+      <div id="campoIntervalo">
+        <label>Intervalo (a cada)</label>
+        <input type="number" id="novoEpiIntervalo" value="1" min="1">
+      </div>
+      <div>
+        <label>Qtd por Entrega</label>
+        <input type="number" id="novoEpiQuantidade" value="1" min="1">
+      </div>
+    </div>
+    <div class="btn-area">
+      <button id="btnSalvarEpi" onclick="adicionarEpi()">➕ Cadastrar EPI</button>
+      <button id="btnCancelarEpi" class="secundario" style="display:none" onclick="limparFormEpi()">Cancelar Edição</button>
+    </div>
+    <h3>EPIs Cadastrados</h3>
+    <div id="listaEPIs" class="lista"></div>
+  </section>
+
+  <!-- ABA VÍNCULOS -->
+  <section id="vinculos" class="aba">
+    <h2>Vincular EPIs ao Cargo</h2>
+    <div class="form-group">
+      <div>
+        <label>Selecione o Cargo</label>
+        <select id="cargoVinculo" onchange="atualizarEPIsVinculo()"></select>
+      </div>
+    </div>
+    <div id="episVinculo" class="epis-check"></div>
+    <div class="btn-area">
+      <button class="success" onclick="salvarVinculo()">💾 Salvar Vínculos</button>
+    </div>
+    <div id="msgVinculo" class="mensagem"></div>
+  </section>
+
+  <!-- ABA CONFIGURAÇÕES / ARQUIVOS -->
+  <section id="config" class="aba">
+    <h2>⚙️ Banco de Dados e Configurações</h2>
+    
+    <div style="background: #eef2f7; padding: 20px; border-radius: 10px; border: 1px solid #d0d7de; margin-bottom: 30px;">
+      <h3>📂 Portabilidade de Dados (Sincronização Trabalho ↔ Casa)</h3>
+      <p style="font-size: 14px; margin-bottom: 15px; color: #555;">
+        Use as opções abaixo para levar seus dados para outro computador.<br>
+        <strong style="color:var(--primary)">1. Salvar:</strong> Cria um arquivo no seu PC com todas as suas informações.<br>
+        <strong style="color:var(--primary)">2. Abrir:</strong> Carrega as informações de um arquivo que você salvou anteriormente.
+      </p>
+      <div class="btn-area">
+        <button class="success" onclick="exportarJSON()">💾 Salvar Banco de Dados (.json)</button>
+        <button class="secundario" onclick="document.getElementById('importarArquivo').click()">📂 Abrir Banco de Dados</button>
+        <input type="file" id="importarArquivo" accept=".json" style="display:none" onchange="importarJSON(event)">
+      </div>
+    </div>
+
+    <h3>⚙️ Ajustes do Sistema</h3>
+    <div class="form-group">
+      <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
+        <input type="checkbox" id="checkSabadoUtil" onchange="salvarSabado()" style="width:auto"> Considerar Sábado como Dia Útil
+      </label>
+    </div>
+
+    <h3>📅 Feriados Municipais e Estaduais</h3>
+    <div class="form-group" style="grid-template-columns: 1fr auto;">
+      <input type="date" id="novoFeriado">
+      <button onclick="adicionarFeriado()">➕ Adicionar Feriado</button>
+    </div>
+    <div id="listaFeriadosExtras" class="lista"></div>
+    
+    <div style="margin-top: 40px; text-align: center; border-top: 1px solid #ddd; padding-top: 20px;">
+      <button class="danger" onclick="resetarDados()">⚠️ Restaurar Dados Padrão (Apaga tudo)</button>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <span>Produzido por: Bruceli Copr. 2026</span>
+</footer>
+
+<script>
+// ==================================================
+// DADOS E PERSISTÊNCIA
+// ==================================================
+const STORAGE_KEY = 'controle_epi_master_v5';
+let dados = null;
+let ultimasLinhasGeradas = [];
+
+function criarDadosPadrao() {
+  return {
+    sabadoUtil: true,
+    feriadosExtras: [],
+    setores: {
+      'Operação Máquinas': ['Operador de Escavadeira', 'Operador de Patrol'],
+      'Geral': ['Ajudante']
+    },
+    epis: {
+      'Botina de Segurança': { ca: '12345', periodo: 'meses', intervalo: 6, quantidade: 1, unidade: 'Par' },
+      'Luva de Vaqueta': { ca: '67890', periodo: 'meses', intervalo: 1, quantidade: 1, unidade: 'Par' },
+      'Óculos de Segurança': { ca: '11223', periodo: 'meses', intervalo: 6, quantidade: 1, unidade: 'Unidade' },
+      'Respirador PFF2': { ca: '44556', periodo: 'meses', intervalo: 1, quantidade: 20, unidade: 'Unidade' }
+    },
+    cargo_epis: {}
+  };
+}
+
+function carregarDados() {
+  const salvo = localStorage.getItem(STORAGE_KEY);
+  if (salvo) {
+    try {
+      const d = JSON.parse(salvo);
+      d.setores = d.setores || {};
+      d.epis = d.epis || {};
+      d.cargo_epis = d.cargo_epis || {};
+      d.feriadosExtras = d.feriadosExtras || [];
+      if (d.sabadoUtil === undefined) d.sabadoUtil = true;
+      // migração: garante CA e unidade
+      for (const nome in d.epis) {
+        if (d.epis[nome].ca === undefined) d.epis[nome].ca = '';
+        if (d.epis[nome].unidade === undefined) d.epis[nome].unidade = 'Unidade';
+        if (d.epis[nome].quantidade === undefined) d.epis[nome].quantidade = 1;
+      }
+      return d;
+    } catch (e) {
+      console.error('Erro ao carregar dados', e);
+    }
+  }
+  const padrao = criarDadosPadrao();
+  salvarDados(padrao);
+  return padrao;
+}
+
+function salvarDados(obj) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(obj));
+}
+
+// ==================================================
+// LÓGICA DE DATA E FERIADOS
+// ==================================================
+function addDays(date, days) {
+  const d = new Date(date);
+  d.setDate(d.getDate() + days);
+  return d;
+}
+
+function addMeses(date, months) {
+  const d = new Date(date);
+  const dia = d.getDate();
+  d.setMonth(d.getMonth() + months);
+  if (d.getDate() !== dia) d.setDate(0);
+  return d;
+}
+
+function formatarData(date) {
+  return date.toLocaleDateString('pt-BR');
+}
+
+function nomeDiaSemana(date) {
+  const nome = date.toLocaleDateString('pt-BR', { weekday: 'long' });
+  return nome.charAt(0).toUpperCase() + nome.slice(1);
+}
+
+function calcularPascoa(ano) {
+  const a = ano % 19;
+  const b = Math.floor(ano / 100);
+  const c = ano % 100;
+  const d = Math.floor(b / 4);
+  const e = b % 4;
+  const f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3);
+  const h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4);
+  const k = c % 4;
+  const l = (32 + 2 * e + 2 * i - h - k) % 7;
+  const m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const mes = Math.floor((h + l - 7 * m + 114) / 31);
+  const dia = ((h + l - 7 * m + 114) % 31) + 1;
+  return new Date(ano, mes - 1, dia);
+}
+
+function ehFeriado(data) {
+  const ano = data.getFullYear();
+  const pascoa = calcularPascoa(ano);
+  const fixos = [
+    new Date(ano, 0, 1),
+    new Date(ano, 3, 21),
+    new Date(ano, 4, 1),
+    new Date(ano, 8, 7),
+    new Date(ano, 9, 12),
+    new Date(ano, 10, 2),
+    new Date(ano, 10, 15),
+    new Date(ano, 10, 20),
+    new Date(ano, 11, 25),
+    pascoa,
+    addDays(pascoa, -2),
+    addDays(pascoa, -47),
+    addDays(pascoa, 60)
+  ];
+  const hoje = new Date(data.getFullYear(), data.getMonth(), data.getDate());
+  if (fixos.some(f => f.getTime() === hoje.getTime())) return true;
+  if (dados.feriadosExtras && dados.feriadosExtras.includes(formatarData(hoje))) return true;
+  return false;
+}
+
+function ehDiaUtil(data) {
+  const dia = data.getDay();
+  if (dia === 0) return false;
+  if (!dados.sabadoUtil && dia === 6) return false;
+  return !ehFeriado(data);
+}
+
+function proximoDiaUtil(data) {
+  const d = new Date(data);
+  while (!ehDiaUtil(d)) d.setDate(d.getDate() + 1);
+  return d;
+}
+
+// ==================================================
+// GESTÃO DE CARGOS (CRUD)
+// ==================================================
+function adicionarCargo() {
+  const setor = document.getElementById('novoSetor').value.trim();
+  const cargo = document.getElementById('novoCargo').value.trim();
+  const editId = document.getElementById('editCargoId').value;
+
+  if (!setor || !cargo) return alert('Preencha todos os campos!');
+
+  if (editId) {
+    const oldCargo = editId;
+    if (oldCargo !== cargo) {
+      dados.cargo_epis[cargo] = dados.cargo_epis[oldCargo] || [];
+      delete dados.cargo_epis[oldCargo];
+      for (let s in dados.setores) {
+        dados.setores[s] = dados.setores[s].map(c => c === oldCargo ? cargo : c);
+      }
+    }
+    for (let s in dados.setores) {
+      const idx = dados.setores[s].indexOf(editId);
+      if (idx !== -1) {
+        dados.setores[s].splice(idx, 1);
+        if (dados.setores[s].length === 0) delete dados.setores[s];
+        break;
+      }
+    }
+    if (!dados.setores[setor]) dados.setores[setor] = [];
+    if (!dados.setores[setor].includes(cargo)) dados.setores[setor].push(cargo);
+  } else {
+    if (!dados.setores[setor]) dados.setores[setor] = [];
+    if (dados.setores[setor].includes(cargo)) return alert('Cargo já existe neste setor!');
+    dados.setores[setor].push(cargo);
+    dados.cargo_epis[cargo] = [];
+  }
+
+  salvarDados(dados);
+  limparFormCargo();
+  atualizarTudo();
+  alert('Cargo salvo com sucesso!');
+}
+
+function editarCargo(setor, cargo) {
+  mostrarAba('cargos');
+  document.getElementById('novoSetor').value = setor;
+  document.getElementById('novoCargo').value = cargo;
+  document.getElementById('editCargoId').value = cargo;
+  document.getElementById('btnSalvarCargo').innerText = '💾 Salvar Alterações';
+  document.getElementById('btnCancelarCargo').style.display = 'inline-flex';
+}
+
+function excluirCargo(cargo) {
+  if (!confirm(`Deseja realmente excluir o cargo "${cargo}"?`)) return;
+  for (let s in dados.setores) {
+    dados.setores[s] = dados.setores[s].filter(c => c !== cargo);
+    if (dados.setores[s].length === 0) delete dados.setores[s];
+  }
+  delete dados.cargo_epis[cargo];
+  salvarDados(dados);
+  atualizarTudo();
+}
+
+function limparFormCargo() {
+  document.getElementById('novoSetor').value = '';
+  document.getElementById('novoCargo').value = '';
+  document.getElementById('editCargoId').value = '';
+  document.getElementById('btnSalvarCargo').innerText = '➕ Cadastrar Cargo';
+  document.getElementById('btnCancelarCargo').style.display = 'none';
+}
+
+// ==================================================
+// GESTÃO DE EPIs (CRUD)
+// ==================================================
+function adicionarEpi() {
+  const nome = document.getElementById('novoEpiNome').value.trim();
+  const ca = document.getElementById('novoEpiCA').value.trim();
+  const unidade = document.getElementById('novoEpiUnidade').value;
+  const periodo = document.getElementById('novoEpiPeriodo').value;
+  const intervalo = parseInt(document.getElementById('novoEpiIntervalo').value) || 1;
+  const quantidade = parseInt(document.getElementById('novoEpiQuantidade').value) || 1;
+  const editId = document.getElementById('editEpiId').value;
+
+  if (!nome) return alert('Informe o nome do EPI!');
+  if (periodo !== 'diario' && intervalo <= 0) return alert('Informe um intervalo válido!');
+  if (quantidade <= 0) return alert('Informe uma quantidade válida!');
+
+  const config = {
+    ca,
+    periodo,
+    unidade,
+    quantidade,
+    ...(periodo !== 'diario' ? { intervalo } : {})
+  };
+
+  if (editId) {
+    if (editId !== nome) {
+      for (let cargo in dados.cargo_epis) {
+        dados.cargo_epis[cargo] = dados.cargo_epis[cargo].map(e => e === editId ? nome : e);
+      }
+      delete dados.epis[editId];
+    }
+    dados.epis[nome] = config;
+  } else {
+    if (dados.epis[nome]) return alert('EPI já cadastrado!');
+    dados.epis[nome] = config;
+  }
+
+  salvarDados(dados);
+  limparFormEpi();
+  atualizarTudo();
+  alert('EPI salvo com sucesso!');
+}
+
+function editarEpi(nome) {
+  mostrarAba('epis');
+  const epi = dados.epis[nome];
+  document.getElementById('novoEpiNome').value = nome;
+  document.getElementById('novoEpiCA').value = epi.ca || '';
+  document.getElementById('novoEpiUnidade').value = epi.unidade || 'Unidade';
+  document.getElementById('novoEpiPeriodo').value = epi.periodo || 'meses';
+  document.getElementById('novoEpiIntervalo').value = epi.intervalo || 1;
+  document.getElementById('novoEpiQuantidade').value = epi.quantidade || 1;
+  document.getElementById('editEpiId').value = nome;
+  document.getElementById('btnSalvarEpi').innerText = '💾 Salvar Alterações';
+  document.getElementById('btnCancelarEpi').style.display = 'inline-flex';
+  ajustarCampoIntervalo();
+}
+
+function excluirEpi(nome) {
+  if (!confirm(`Deseja excluir o EPI "${nome}"? Ele será removido de todos os cargos.`)) return;
+  delete dados.epis[nome];
+  for (let cargo in dados.cargo_epis) {
+    dados.cargo_epis[cargo] = dados.cargo_epis[cargo].filter(e => e !== nome);
+  }
+  salvarDados(dados);
+  atualizarTudo();
+}
+
+function limparFormEpi() {
+  document.getElementById('novoEpiNome').value = '';
+  document.getElementById('novoEpiCA').value = '';
+  document.getElementById('novoEpiUnidade').value = 'Unidade';
+  document.getElementById('novoEpiPeriodo').value = 'meses';
+  document.getElementById('novoEpiIntervalo').value = '1';
+  document.getElementById('novoEpiQuantidade').value = '1';
+  document.getElementById('editEpiId').value = '';
+  document.getElementById('btnSalvarEpi').innerText = '➕ Cadastrar EPI';
+  document.getElementById('btnCancelarEpi').style.display = 'none';
+  ajustarCampoIntervalo();
+}
+
+function ajustarCampoIntervalo() {
+  const periodo = document.getElementById('novoEpiPeriodo').value;
+  document.getElementById('campoIntervalo').style.display = (periodo === 'diario') ? 'none' : 'block';
+}
+
+// ==================================================
+// VÍNCULOS
+// ==================================================
+function salvarVinculo() {
+  const cargo = document.getElementById('cargoVinculo').value;
+  if (!cargo) return alert('Selecione um cargo!');
+  const epis = Array.from(document.querySelectorAll('#episVinculo input:checked')).map(cb => cb.value);
+  dados.cargo_epis[cargo] = epis;
+  salvarDados(dados);
+  atualizarListaCargos();
+  atualizarEPIsCronograma();
+  mostrarMensagem('vinculo', 'Vínculos salvos com sucesso!');
+}
+
+// ==================================================
+// CRONOGRAMA
+// ==================================================
+function montarLinhasCronograma(cargo, epis, dIni, dFim) {
+  const linhas = [];
+  epis.forEach(epiNome => {
+    const cfg = dados.epis[epiNome];
+    if (!cfg) return;
+
+    let dataEnt = proximoDiaUtil(new Date(dIni));
+    while (dataEnt <= dFim) {
+      let dataTroc = new Date(dataEnt);
+      if (cfg.periodo === 'diario') dataTroc = addDays(dataEnt, 1);
+      else if (cfg.periodo === 'dias') dataTroc = addDays(dataEnt, parseInt(cfg.intervalo));
+      else dataTroc = addMeses(dataEnt, parseInt(cfg.intervalo) || 1);
+
+      dataTroc = proximoDiaUtil(dataTroc);
+
+      linhas.push({
+        cargo: cargo,
+        epi: epiNome,
+        ca: cfg.ca || '',
+        qtd: cfg.quantidade || 1,
+        un: cfg.unidade || 'Unidade',
+        ent: new Date(dataEnt),
+        troc: dataTroc
+      });
+
+      if (cfg.periodo === 'diario') dataEnt = proximoDiaUtil(addDays(dataEnt, 1));
+      else if (cfg.periodo === 'dias') dataEnt = proximoDiaUtil(addDays(dataEnt, parseInt(cfg.intervalo)));
+      else dataEnt = proximoDiaUtil(addMeses(dataEnt, parseInt(cfg.intervalo) || 1));
+    }
+  });
+
+  // Ordena por DATA DE ENTREGA e depois por nome do EPI
+  linhas.sort((a, b) => {
+    const diff = a.ent - b.ent;
+    if (diff !== 0) return diff;
+    return a.epi.localeCompare(b.epi, 'pt-BR');
+  });
+
+  return linhas;
+}
+
+function gerarCronograma() {
+  const cargo = document.getElementById('cargoCronograma').value;
+  const dIniStr = document.getElementById('dataInicio').value;
+  const dFimStr = document.getElementById('dataFim').value;
+  const epis = Array.from(document.querySelectorAll('#episCronograma input:checked')).map(cb => cb.value);
+
+  if (!cargo || epis.length === 0 || !dIniStr) {
+    return alert('Preencha Cargo, Data de Início e selecione os EPIs!');
+  }
+
+  const dIni = new Date(dIniStr + 'T00:00:00');
+  const dFim = dFimStr ? new Date(dFimStr + 'T00:00:00') : new Date();
+  if (dFim < dIni) return alert('Data final não pode ser anterior à data inicial.');
+
+  const trocas = montarLinhasCronograma(cargo, epis, dIni, dFim);
+  ultimasLinhasGeradas = trocas;
+
+  if (trocas.length === 0) {
+    document.getElementById('resultadoCronograma').innerHTML = '<p>Nenhuma troca encontrada no período.</p>';
+    document.getElementById('btnExportar').style.display = 'none';
+    return;
+  }
+
+  // Agrupa por data de entrega (como na tela)
+  const grupos = {};
+  trocas.forEach(t => {
+    const key = formatarData(t.ent);
+    if (!grupos[key]) grupos[key] = { data: t.ent, itens: [] };
+    grupos[key].itens.push(t);
+  });
+
+  const sortedDates = Object.keys(grupos).sort((a, b) => grupos[a].data - grupos[b].data);
+
+  let html = `<h3>Total de Datas de Entrega: ${sortedDates.length}</h3>`;
+  sortedDates.forEach(key => {
+    const g = grupos[key];
+    html += `<div class="grupo-data">
+      <strong>📅 Entrega: ${key} (${nomeDiaSemana(g.data)})</strong>
+      <ul>`;
+    g.itens.forEach(i => {
+      const caTxt = i.ca ? `CA: ${i.ca}` : 'CA: S/ CA';
+      html += `<li>
+        <span>${i.qtd}x ${i.epi} <span class="badge-un">${i.un}</span> <span class="ca-info">(${caTxt})</span></span>
+        <div class="data-info">
+          <span class="data-entrega">Entregue: ${formatarData(i.ent)}</span>
+          <span class="data-troca">Troca em: ${formatarData(i.troc)}</span>
+        </div>
+      </li>`;
+    });
+    html += `</ul></div>`;
+  });
+
+  document.getElementById('resultadoCronograma').innerHTML = html;
+  document.getElementById('btnExportar').style.display = 'inline-flex';
+  mostrarMensagem('cronograma', `Cronograma gerado: ${sortedDates.length} data(s) de entrega.`);
+}
+
+// ==================================================
+// EXPORTAÇÃO CSV — AGRUPADA POR DATA (igual à tela)
+// ==================================================
+function exportarCSV() {
+  // Usa o último cronograma gerado; se não houver, monta de novo
+  let linhas = ultimasLinhasGeradas;
+
+  if (!linhas || linhas.length === 0) {
+    const cargo = document.getElementById('cargoCronograma').value;
+    const dIniStr = document.getElementById('dataInicio').value;
+    const dFimStr = document.getElementById('dataFim').value;
+    const epis = Array.from(document.querySelectorAll('#episCronograma input:checked')).map(cb => cb.value);
+
+    if (!cargo || epis.length === 0 || !dIniStr) {
+      return alert('Gere o cronograma antes de exportar (cargo, data e EPIs).');
+    }
+
+    const dIni = new Date(dIniStr + 'T00:00:00');
+    const dFim = dFimStr ? new Date(dFimStr + 'T00:00:00') : new Date();
+    linhas = montarLinhasCronograma(cargo, epis, dIni, dFim);
+  }
+
+  if (!linhas.length) return alert('Nenhuma linha para exportar.');
+
+  const cargoNome = linhas[0].cargo || 'cargo';
+
+  // ---------- BLOCO 1: detalhado, ORDENADO POR DATA ----------
+  // No Excel: mesma data fica junta (Luva, Botina, Óculos do mesmo dia)
+  let csv = '\ufeffData Entrega;Dia da Semana;Cargo;EPI;CA;Qtd;Unidade;Data Troca\n';
+  linhas.forEach(l => {
+    csv += `${formatarData(l.ent)};${nomeDiaSemana(l.ent)};${l.cargo};${l.epi};${l.ca || ''};${l.qtd};${l.un};${formatarData(l.troc)}\n`;
+  });
+
+  // ---------- BLOCO 2: visão agrupada (1 linha por data) ----------
+  csv += '\n';
+  csv += '===== VISÃO AGRUPADA POR DATA (como no sistema) =====\n';
+  csv += 'Data Entrega;Dia da Semana;Itens Entregues\n';
+
+  const grupos = {};
+  linhas.forEach(l => {
+    const chave = formatarData(l.ent);
+    if (!grupos[chave]) grupos[chave] = { data: l.ent, itens: [] };
+    const caTxt = l.ca ? `CA ${l.ca}` : 'S/ CA';
+    grupos[chave].itens.push(`${l.qtd}x ${l.epi} (${l.un}) [${caTxt}] - Troca: ${formatarData(l.troc)}`);
+  });
+
+  Object.keys(grupos)
+    .sort((a, b) => grupos[a].data - grupos[b].data)
+    .forEach(chave => {
+      const g = grupos[chave];
+      const itensStr = g.itens.join(' | ');
+      csv += `${chave};${nomeDiaSemana(g.data)};"${itensStr}"\n`;
+    });
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `cronograma_${String(cargoNome).replace(/[\\/:*?"<>|]/g, '_')}.csv`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+// ==================================================
+// PORTABILIDADE E ARQUIVOS
+// ==================================================
+function exportarJSON() {
+  const blob = new Blob([JSON.stringify(dados, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'banco_dados_epi.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function importarJSON(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const novo = JSON.parse(e.target.result);
+      if (!novo.setores || !novo.epis) {
+        alert('Arquivo inválido. Estrutura não reconhecida.');
+        return;
+      }
+      if (!confirm('Deseja carregar este arquivo? Todos os dados atuais serão substituídos.')) return;
+
+      dados = novo;
+      dados.cargo_epis = dados.cargo_epis || {};
+      dados.feriadosExtras = dados.feriadosExtras || [];
+      if (dados.sabadoUtil === undefined) dados.sabadoUtil = true;
+      for (const nome in dados.epis) {
+        if (dados.epis[nome].ca === undefined) dados.epis[nome].ca = '';
+        if (dados.epis[nome].unidade === undefined) dados.epis[nome].unidade = 'Unidade';
+        if (dados.epis[nome].quantidade === undefined) dados.epis[nome].quantidade = 1;
+      }
+
+      salvarDados(dados);
+      atualizarTudo();
+      alert('Banco de dados carregado com sucesso!');
+      mostrarAba('config');
+    } catch (err) {
+      alert('Arquivo inválido!');
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+// ==================================================
+// CONFIGURAÇÕES
+// ==================================================
+function salvarSabado() {
+  dados.sabadoUtil = document.getElementById('checkSabadoUtil').checked;
+  salvarDados(dados);
+}
+
+function adicionarFeriado() {
+  const val = document.getElementById('novoFeriado').value;
+  if (!val) return alert('Informe a data do feriado.');
+  const str = formatarData(new Date(val + 'T00:00:00'));
+  if (!dados.feriadosExtras.includes(str)) {
+    dados.feriadosExtras.push(str);
+    dados.feriadosExtras.sort((a, b) => {
+      const [da, ma, aa] = a.split('/').map(Number);
+      const [db, mb, ab] = b.split('/').map(Number);
+      return new Date(aa, ma - 1, da) - new Date(ab, mb - 1, db);
+    });
+    salvarDados(dados);
+    atualizarListaFeriados();
+    document.getElementById('novoFeriado').value = '';
+  } else {
+    alert('Feriado já cadastrado.');
+  }
+}
+
+function removerFeriado(i) {
+  dados.feriadosExtras.splice(i, 1);
+  salvarDados(dados);
+  atualizarListaFeriados();
+}
+
+function resetarDados() {
+  if (!confirm('Isso apagará absolutamente tudo. Tem certeza?')) return;
+  dados = criarDadosPadrao();
+  salvarDados(dados);
+  ultimasLinhasGeradas = [];
+  document.getElementById('resultadoCronograma').innerHTML = '';
+  document.getElementById('btnExportar').style.display = 'none';
+  atualizarTudo();
+  alert('Dados padrão restaurados.');
+  mostrarAba('cronograma');
+}
+
+// ==================================================
+// INTERFACE
+// ==================================================
+function mostrarAba(id) {
+  document.querySelectorAll('.aba').forEach(a => a.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function mostrarMensagem(id, texto, sucesso = true) {
+  const elId = 'msg' + id.charAt(0).toUpperCase() + id.slice(1);
+  const m = document.getElementById(elId);
+  if (!m) return;
+  m.innerHTML = texto;
+  m.className = 'mensagem ' + (sucesso ? 'sucesso' : 'erro');
+  m.style.display = 'block';
+  setTimeout(() => { m.style.display = 'none'; }, 3500);
+}
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function atualizarTudo() {
+  atualizarSelects();
+  atualizarListaCargos();
+  atualizarListaEPIs();
+  atualizarListaFeriados();
+  atualizarEPIsCronograma();
+  atualizarEPIsVinculo();
+  document.getElementById('checkSabadoUtil').checked = dados.sabadoUtil !== false;
+}
+
+function atualizarSelects() {
+  const cargos = [];
+  for (let s in dados.setores) dados.setores[s].forEach(c => cargos.push(c));
+  const opts = cargos.length
+    ? cargos.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('')
+    : '<option value="">Nenhum cargo cadastrado</option>';
+  document.getElementById('cargoCronograma').innerHTML = opts;
+  document.getElementById('cargoVinculo').innerHTML = opts;
+}
+
+function atualizarListaCargos() {
+  let html = '';
+  for (let s in dados.setores) {
+    html += `<div style="margin-bottom:15px"><strong>📁 Setor: ${escapeHtml(s)}</strong><div class="lista">`;
+    dados.setores[s].forEach(c => {
+      const epiCount = (dados.cargo_epis[c] || []).length;
+      html += `<div class="lista-item">
+        <span>${escapeHtml(c)} <em style="color:#888;font-size:12px">(${epiCount} EPI(s))</em></span>
+        <div style="display:flex; gap:5px">
+          <button class="edit" onclick="editarCargo('${escapeHtml(s).replace(/'/g, "\\'")}','${escapeHtml(c).replace(/'/g, "\\'")}')">✏️</button>
+          <button class="delete" onclick="excluirCargo('${escapeHtml(c).replace(/'/g, "\\'")}')">🗑️</button>
+        </div>
+      </div>`;
+    });
+    html += `</div></div>`;
+  }
+  document.getElementById('listaCargos').innerHTML = html || '<p style="padding:15px">Nenhum cargo cadastrado.</p>';
+}
+
+function atualizarListaEPIs() {
+  let html = '';
+  for (let n in dados.epis) {
+    const e = dados.epis[n];
+    const periodoTxt = e.periodo === 'diario' ? 'Diário' : `A cada ${e.intervalo} ${e.periodo}`;
+    html += `<div class="lista-item">
+      <span>
+        <strong>${escapeHtml(n)}</strong>
+        <span class="badge-un">${escapeHtml(e.unidade || 'Unidade')}</span>
+        <span class="ca-info">CA: ${escapeHtml(e.ca || 'N/A')}</span>
+        — ${e.quantidade || 1}x (${periodoTxt})
+      </span>
+      <div style="display:flex; gap:5px">
+        <button class="edit" onclick="editarEpi('${escapeHtml(n).replace(/'/g, "\\'")}')">✏️</button>
+        <button class="delete" onclick="excluirEpi('${escapeHtml(n).replace(/'/g, "\\'")}')">🗑️</button>
+      </div>
+    </div>`;
+  }
+  document.getElementById('listaEPIs').innerHTML = html || '<p style="padding:15px">Nenhum EPI cadastrado.</p>';
+}
+
+function atualizarListaFeriados() {
+  const lista = dados.feriadosExtras || [];
+  document.getElementById('listaFeriadosExtras').innerHTML = lista.length
+    ? lista.map((f, i) =>
+        `<div class="lista-item"><span>${escapeHtml(f)}</span><button class="delete pequeno" onclick="removerFeriado(${i})">🗑️</button></div>`
+      ).join('')
+    : '<p style="padding:15px">Sem feriados extras.</p>';
+}
+
+function atualizarEPIsCronograma() {
+  const cargo = document.getElementById('cargoCronograma').value;
+  const div = document.getElementById('episCronograma');
+  if (!cargo) {
+    div.innerHTML = '<p>Selecione um cargo.</p>';
+    return;
+  }
+  const vinculados = dados.cargo_epis[cargo] || [];
+  const nomes = Object.keys(dados.epis);
+  if (!nomes.length) {
+    div.innerHTML = '<p>Nenhum EPI cadastrado.</p>';
+    return;
+  }
+  div.innerHTML = nomes.map(n => {
+    const checked = vinculados.includes(n) ? 'checked' : '';
+    const cfg = dados.epis[n];
+    const caTxt = cfg.ca ? ` | CA ${escapeHtml(cfg.ca)}` : '';
+    return `<label><input type="checkbox" value="${escapeHtml(n)}" ${checked}> ${escapeHtml(n)} (${cfg.quantidade || 1} ${escapeHtml(cfg.unidade || 'Unidade')}${caTxt})</label>`;
+  }).join('');
+}
+
+function atualizarEPIsVinculo() {
+  const cargo = document.getElementById('cargoVinculo').value;
+  const div = document.getElementById('episVinculo');
+  if (!cargo) {
+    div.innerHTML = '<p>Selecione um cargo.</p>';
+    return;
+  }
+  const vinculados = dados.cargo_epis[cargo] || [];
+  const nomes = Object.keys(dados.epis);
+  if (!nomes.length) {
+    div.innerHTML = '<p>Nenhum EPI cadastrado.</p>';
+    return;
+  }
+  div.innerHTML = nomes.map(n => {
+    const checked = vinculados.includes(n) ? 'checked' : '';
+    const cfg = dados.epis[n];
+    const caTxt = cfg.ca ? ` | CA ${escapeHtml(cfg.ca)}` : '';
+    return `<label><input type="checkbox" value="${escapeHtml(n)}" ${checked}> ${escapeHtml(n)} (${cfg.quantidade || 1} ${escapeHtml(cfg.unidade || 'Unidade')}${caTxt})</label>`;
+  }).join('');
+}
+
+// ==================================================
+// INICIALIZAÇÃO
+// ==================================================
+window.onload = () => {
+  dados = carregarDados();
+  atualizarTudo();
+  mostrarAba('cronograma');
+};
+</script>
+
+</body>
+</html>
