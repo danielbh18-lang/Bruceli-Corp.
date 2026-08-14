@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
@@ -65,6 +65,11 @@
   .badge-un { font-size: 11px; background: #eee; padding: 2px 6px; border-radius: 4px; color: #666; margin-left: 5px; }
   .ca-info { font-size: 12px; color: #666; font-style: italic; margin-left: 5px; }
 
+  .info-trabalhador { background: #eef2f7; padding: 15px; border-radius: 8px; border: 1px solid #d0d7de; margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 20px; }
+  .info-trabalhador div { flex: 1; min-width: 200px; }
+  .info-trabalhador span { display: block; font-size: 13px; color: #666; }
+  .info-trabalhador strong { font-size: 16px; color: var(--primary); }
+
   .mensagem { padding: 15px; border-radius: 6px; margin: 10px 0; display: none; text-align: center; font-weight: bold; }
   .sucesso { background: #d4edda; color: #155724; }
   .erro { background: #f8d7da; color: #721c24; }
@@ -93,6 +98,14 @@
   <section id="cronograma" class="aba active">
     <h2>Gerar Cronograma de Trocas</h2>
     <div class="form-group">
+      <div>
+        <label>Nome do Trabalhador</label>
+        <input type="text" id="nomeTrabalhador" placeholder="Digite o nome completo">
+      </div>
+      <div>
+        <label>CPF</label>
+        <input type="text" id="cpfTrabalhador" placeholder="000.000.000-00">
+      </div>
       <div>
         <label>Cargo</label>
         <select id="cargoCronograma" onchange="atualizarEPIsCronograma()"></select>
@@ -594,6 +607,8 @@ function montarLinhasCronograma(cargo, epis, dIni, dFim) {
 }
 
 function gerarCronograma() {
+  const nomeTrab = document.getElementById('nomeTrabalhador').value.trim();
+  const cpfTrab = document.getElementById('cpfTrabalhador').value.trim();
   const cargo = document.getElementById('cargoCronograma').value;
   const dIniStr = document.getElementById('dataInicio').value;
   const dFimStr = document.getElementById('dataFim').value;
@@ -616,7 +631,7 @@ function gerarCronograma() {
     return;
   }
 
-  // Agrupa por data de entrega (como na tela)
+  // Agrupa por data de entrega
   const grupos = {};
   trocas.forEach(t => {
     const key = formatarData(t.ent);
@@ -626,7 +641,17 @@ function gerarCronograma() {
 
   const sortedDates = Object.keys(grupos).sort((a, b) => grupos[a].data - grupos[b].data);
 
-  let html = `<h3>Total de Datas de Entrega: ${sortedDates.length}</h3>`;
+  let html = '';
+
+  // Identificação do trabalhador
+  html += `<div class="info-trabalhador">`;
+  html += `<div><span>Trabalhador</span><strong>${escapeHtml(nomeTrab || 'Não informado')}</strong></div>`;
+  html += `<div><span>CPF</span><strong>${escapeHtml(cpfTrab || 'Não informado')}</strong></div>`;
+  html += `<div><span>Cargo</span><strong>${escapeHtml(cargo)}</strong></div>`;
+  html += `<div><span>Período</span><strong>${formatarData(dIni)} a ${formatarData(dFim)}</strong></div>`;
+  html += `</div>`;
+
+  html += `<h3>Total de Datas de Entrega: ${sortedDates.length}</h3>`;
   sortedDates.forEach(key => {
     const g = grupos[key];
     html += `<div class="grupo-data">
@@ -635,7 +660,7 @@ function gerarCronograma() {
     g.itens.forEach(i => {
       const caTxt = i.ca ? `CA: ${i.ca}` : 'CA: S/ CA';
       html += `<li>
-        <span>${i.qtd}x ${i.epi} <span class="badge-un">${i.un}</span> <span class="ca-info">(${caTxt})</span></span>
+        <span>${i.qtd}x ${escapeHtml(i.epi)} <span class="badge-un">${i.un}</span> <span class="ca-info">(${caTxt})</span></span>
         <div class="data-info">
           <span class="data-entrega">Entregue: ${formatarData(i.ent)}</span>
           <span class="data-troca">Troca em: ${formatarData(i.troc)}</span>
@@ -651,10 +676,9 @@ function gerarCronograma() {
 }
 
 // ==================================================
-// EXPORTAÇÃO CSV — AGRUPADA POR DATA (igual à tela)
+// EXPORTAÇÃO CSV — AGRUPADA POR DATA
 // ==================================================
 function exportarCSV() {
-  // Usa o último cronograma gerado; se não houver, monta de novo
   let linhas = ultimasLinhasGeradas;
 
   if (!linhas || linhas.length === 0) {
@@ -674,18 +698,25 @@ function exportarCSV() {
 
   if (!linhas.length) return alert('Nenhuma linha para exportar.');
 
-  const cargoNome = linhas[0].cargo || 'cargo';
+  const nomeTrab = document.getElementById('nomeTrabalhador').value.trim();
+  const cpfTrab = document.getElementById('cpfTrabalhador').value.trim();
+  const cargoNome = document.getElementById('cargoCronograma').value || linhas[0].cargo;
 
-  // ---------- BLOCO 1: detalhado, ORDENADO POR DATA ----------
-  // No Excel: mesma data fica junta (Luva, Botina, Óculos do mesmo dia)
-  let csv = '\ufeffData Entrega;Dia da Semana;Cargo;EPI;CA;Qtd;Unidade;Data Troca\n';
+  // --------------------- CSV PRINCIPAL (DETALHADO) ---------------------
+  let csv = '\ufeff';
+  csv += '===== IDENTIFICAÇÃO DO TRABALHADOR =====\n';
+  csv += `Nome;CPF;Cargo\n`;
+  csv += `${nomeTrab || 'Não informado'};${cpfTrab || 'Não informado'};${cargoNome}\n\n`;
+
+  csv += '===== CRONOGRAMA DETALHADO (ORDENADO POR DATA) =====\n';
+  csv += 'Data Entrega;Dia da Semana;Cargo;EPI;CA;Qtd;Unidade;Data Troca\n';
   linhas.forEach(l => {
     csv += `${formatarData(l.ent)};${nomeDiaSemana(l.ent)};${l.cargo};${l.epi};${l.ca || ''};${l.qtd};${l.un};${formatarData(l.troc)}\n`;
   });
 
-  // ---------- BLOCO 2: visão agrupada (1 linha por data) ----------
+  // --------------------- CSV VISÃO AGRUPADA ---------------------
   csv += '\n';
-  csv += '===== VISÃO AGRUPADA POR DATA (como no sistema) =====\n';
+  csv += '===== VISÃO AGRUPADA POR DATA (COMO NO SISTEMA) =====\n';
   csv += 'Data Entrega;Dia da Semana;Itens Entregues\n';
 
   const grupos = {};
